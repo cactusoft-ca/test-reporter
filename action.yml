@@ -57,6 +57,10 @@ inputs:
     description: Set this action as failed if test report contain any failed test
     required: true
     default: 'true'
+  fail-on-no-results:
+    description: Set this action as failed if no test report files were found
+    required: true
+    default: 'false'
   working-directory:
     description: Relative path under $GITHUB_WORKSPACE where the repository was checked out
     required: false

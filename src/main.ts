@@ -40,6 +40,7 @@ class TestReporter {
   readonly listTests = core.getInput('list-tests', {required: true}) as 'all' | 'failed' | 'none'
   readonly maxAnnotations = parseInt(core.getInput('max-annotations', {required: true}))
   readonly failOnError = core.getInput('fail-on-error', {required: true}) === 'true'
+  readonly failOnNoResults = core.getInput('fail-on-no-results', {required: true}) === 'true'
   readonly workDirInput = core.getInput('working-directory', {required: false})
   readonly onlySummary = core.getInput('only-summary', {required: false}) === 'true'
   readonly token = core.getInput('token', {required: true})
@@ -136,7 +137,11 @@ class TestReporter {
     }
 
     if (results.length === 0) {
-      core.setFailed(`No test report files were found`)
+      if (this.failOnNoResults) {
+        core.setFailed(`No test report files were found`)
+      } else {
+        core.warning(`No test report files were found`)
+      }
       return
     }
   }
@@ -190,6 +195,26 @@ class TestReporter {
       },
       ...github.context.repo
     })
+
+    core.info(`Updating pull request comment with test results`)
+    const result = await this.octokit.rest.repos.listPullRequestsAssociatedWithCommit({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
+      commit_sha: this.context.sha
+    })
+
+    const prs = result.data.filter(el => el.state === 'open')
+    if (prs.length > 0) {
+      const pr = prs[0]
+
+      this.octokit.rest.issues.createComment({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        issue_number: pr.number,
+        body: summary
+      })
+    }
+
     core.info(`Check run create response: ${resp.status}`)
     core.info(`Check run URL: ${resp.data.url}`)
     core.info(`Check run HTML: ${resp.data.html_url}`)

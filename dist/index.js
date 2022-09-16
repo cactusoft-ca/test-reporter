@@ -293,6 +293,7 @@ class TestReporter {
         this.listTests = core.getInput('list-tests', { required: true });
         this.maxAnnotations = parseInt(core.getInput('max-annotations', { required: true }));
         this.failOnError = core.getInput('fail-on-error', { required: true }) === 'true';
+        this.failOnNoResults = core.getInput('fail-on-no-results', { required: true }) === 'true';
         this.workDirInput = core.getInput('working-directory', { required: false });
         this.onlySummary = core.getInput('only-summary', { required: false }) === 'true';
         this.token = core.getInput('token', { required: true });
@@ -364,7 +365,12 @@ class TestReporter {
                 return;
             }
             if (results.length === 0) {
-                core.setFailed(`No test report files were found`);
+                if (this.failOnNoResults) {
+                    core.setFailed(`No test report files were found`);
+                }
+                else {
+                    core.warning(`No test report files were found`);
+                }
                 return;
             }
         });
@@ -401,6 +407,22 @@ class TestReporter {
                     summary,
                     annotations
                 } }, github.context.repo));
+            core.info(`Updating pull request comment with test results`);
+            const result = yield this.octokit.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner: github.context.repo.owner,
+                repo: github.context.repo.repo,
+                commit_sha: this.context.sha
+            });
+            const prs = result.data.filter(el => el.state === 'open');
+            if (prs.length > 0) {
+                const pr = prs[0];
+                this.octokit.rest.issues.createComment({
+                    owner: github.context.repo.owner,
+                    repo: github.context.repo.repo,
+                    issue_number: pr.number,
+                    body: summary
+                });
+            }
             core.info(`Check run create response: ${resp.status}`);
             core.info(`Check run URL: ${resp.data.url}`);
             core.info(`Check run HTML: ${resp.data.html_url}`);
