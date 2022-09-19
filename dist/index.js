@@ -395,7 +395,7 @@ class TestReporter {
             core.info('Creating report summary');
             const { listSuites, listTests, onlySummary } = this;
             const baseUrl = createResp.data.html_url;
-            const summary = (0, get_report_1.getReport)(results, { listSuites, listTests, baseUrl, onlySummary });
+            const summary = `<details><summary>Test results</summary>${(0, get_report_1.getReport)(results, { listSuites, listTests, baseUrl, onlySummary })}</details>`;
             core.info('Creating annotations');
             const annotations = (0, get_annotations_1.getAnnotations)(results, this.maxAnnotations);
             const isFailed = results.some(tr => tr.result === 'failed');
@@ -1514,10 +1514,8 @@ function getReport(results, options = defaultOptions) {
     applySort(results);
     const opts = Object.assign({}, options);
     let lines = renderReport(results, opts);
-    let report = "<details><summary>Test results</summary>\n\n";
-    report += lines.join('\n');
+    let report = lines.join('\n');
     if (getByteLength(report) <= MAX_REPORT_LENGTH) {
-        report += "</details>";
         return report;
     }
     if (opts.listTests === 'all') {
@@ -1526,7 +1524,6 @@ function getReport(results, options = defaultOptions) {
         lines = renderReport(results, opts);
         report = lines.join('\n');
         if (getByteLength(report) <= MAX_REPORT_LENGTH) {
-            report += "</details>";
             return report;
         }
     }
@@ -1558,7 +1555,7 @@ function trimReport(lines) {
         reportLines.push('```');
     }
     reportLines.push(errorMsg);
-    return "<details><summary>Test results</summary>\n\n" + reportLines.join('\n') + "</details>";
+    return reportLines.join('\n');
 }
 function applySort(results) {
     results.sort((a, b) => a.path.localeCompare(b.path, node_utils_1.DEFAULT_LOCALE));

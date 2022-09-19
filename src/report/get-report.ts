@@ -28,11 +28,9 @@ export function getReport(results: TestRunResult[], options: ReportOptions = def
 
   const opts = {...options}
   let lines = renderReport(results, opts)
-  let report = '<details><summary>Test results</summary>\n\n'
-  report += lines.join('\n')
+  let report = lines.join('\n')
 
   if (getByteLength(report) <= MAX_REPORT_LENGTH) {
-    report += '</details>'
     return report
   }
 
@@ -42,7 +40,6 @@ export function getReport(results: TestRunResult[], options: ReportOptions = def
     lines = renderReport(results, opts)
     report = lines.join('\n')
     if (getByteLength(report) <= MAX_REPORT_LENGTH) {
-      report += '</details>'
       return report
     }
   }
@@ -79,7 +76,7 @@ function trimReport(lines: string[]): string {
     reportLines.push('```')
   }
   reportLines.push(errorMsg)
-  return '<details><summary>Test results</summary>\n\n' + reportLines.join('\n') + '</details>'
+  return reportLines.join('\n')
 }
 
 function applySort(results: TestRunResult[]): void {
