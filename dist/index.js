@@ -1514,8 +1514,10 @@ function getReport(results, options = defaultOptions) {
     applySort(results);
     const opts = Object.assign({}, options);
     let lines = renderReport(results, opts);
-    let report = lines.join('\n');
+    let report = "<details><summary>Test results</summary>\n\n";
+    report += lines.join('\n');
     if (getByteLength(report) <= MAX_REPORT_LENGTH) {
+        report += "</details>";
         return report;
     }
     if (opts.listTests === 'all') {
@@ -1524,6 +1526,7 @@ function getReport(results, options = defaultOptions) {
         lines = renderReport(results, opts);
         report = lines.join('\n');
         if (getByteLength(report) <= MAX_REPORT_LENGTH) {
+            report += "</details>";
             return report;
         }
     }
@@ -1555,7 +1558,7 @@ function trimReport(lines) {
         reportLines.push('```');
     }
     reportLines.push(errorMsg);
-    return reportLines.join('\n');
+    return "<details><summary>Test results</summary>\n\n" + reportLines.join('\n') + "</details>";
 }
 function applySort(results) {
     results.sort((a, b) => a.path.localeCompare(b.path, node_utils_1.DEFAULT_LOCALE));
