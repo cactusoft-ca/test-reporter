@@ -174,7 +174,7 @@ class TestReporter {
     core.info('Creating report summary')
     const {listSuites, listTests, onlySummary} = this
     const baseUrl = createResp.data.html_url as string
-    const summary = `<details><summary>Test results</summary>${getReport(results, {
+    const summary = `<details><summary>Test results</summary>\n\n${getReport(results, {
       listSuites,
       listTests,
       baseUrl,

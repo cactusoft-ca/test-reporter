@@ -395,7 +395,12 @@ class TestReporter {
             core.info('Creating report summary');
             const { listSuites, listTests, onlySummary } = this;
             const baseUrl = createResp.data.html_url;
-            const summary = `<details><summary>Test results</summary>${(0, get_report_1.getReport)(results, { listSuites, listTests, baseUrl, onlySummary })}</details>`;
+            const summary = `<details><summary>Test results</summary>\n\n${(0, get_report_1.getReport)(results, {
+                listSuites,
+                listTests,
+                baseUrl,
+                onlySummary
+            })}</details>`;
             core.info('Creating annotations');
             const annotations = (0, get_annotations_1.getAnnotations)(results, this.maxAnnotations);
             const isFailed = results.some(tr => tr.result === 'failed');
