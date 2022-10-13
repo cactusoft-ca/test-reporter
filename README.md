@@ -13,6 +13,7 @@ This [Github Action](https://github.com/features/actions) displays test results 
 |:--:|:--:|:--:|:--:|
 
 **Supported languages / frameworks:**
+
 - .NET / [xUnit](https://xunit.net/) / [NUnit](https://nunit.org/) / [MSTest](https://github.com/Microsoft/testfx-docs)
 - Dart / [test](https://pub.dev/packages/test)
 - Flutter / [test](https://pub.dev/packages/test)
@@ -38,27 +39,29 @@ jobs:
     name: Build & Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2     # checkout the repo
-      - run: npm ci                   # install packages
-      - run: npm test                 # run tests (configured to use jest-junit reporter)
+      - uses: actions/checkout@v2 # checkout the repo
+      - run: npm ci # install packages
+      - run: npm test # run tests (configured to use jest-junit reporter)
 
       - name: Test Report
         uses: dorny/test-reporter@v1
-        if: success() || failure()    # run this step even if previous step failed
+        if: success() || failure() # run this step even if previous step failed
         with:
-          name: JEST Tests            # Name of the check run which will be created
-          path: reports/jest-*.xml    # Path to test results
-          reporter: jest-junit        # Format of test results
+          name: JEST Tests # Name of the check run which will be created
+          path: reports/jest-*.xml # Path to test results
+          reporter: jest-junit # Format of test results
 ```
 
 ## Recommended setup for public repositories
 
 Workflows triggered by pull requests from forked repositories are executed with read-only token and therefore can't create check runs.
 To workaround this security restriction, it's required to use two separate workflows:
+
 1. `CI` runs in the context of the PR head branch with the read-only token. It executes the tests and uploads test results as a build artifact
 2. `Test Report` runs in the context of the repository main branch with read/write token. It will download test results and create reports
 
-**PR head branch:**  *.github/workflows/ci.yml*
+**PR head branch:** _.github/workflows/ci.yml_
+
 ```yaml
 name: 'CI'
 on:
@@ -67,33 +70,35 @@ jobs:
   build-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2         # checkout the repo
-      - run: npm ci                       # install packages
-      - run: npm test                     # run tests (configured to use jest-junit reporter)
-      - uses: actions/upload-artifact@v2  # upload test results
-        if: success() || failure()        # run this step even if previous step failed
+      - uses: actions/checkout@v2 # checkout the repo
+      - run: npm ci # install packages
+      - run: npm test # run tests (configured to use jest-junit reporter)
+      - uses: actions/upload-artifact@v2 # upload test results
+        if: success() || failure() # run this step even if previous step failed
         with:
           name: test-results
           path: jest-junit.xml
 ```
-**default branch:**  *.github/workflows/test-report.yml*
+
+**default branch:** _.github/workflows/test-report.yml_
+
 ```yaml
 name: 'Test Report'
 on:
   workflow_run:
-    workflows: ['CI']                     # runs after CI workflow
+    workflows: ['CI'] # runs after CI workflow
     types:
       - completed
 jobs:
   report:
     runs-on: ubuntu-latest
     steps:
-    - uses: dorny/test-reporter@v1
-      with:
-        artifact: test-results            # artifact name
-        name: JEST Tests                  # Name of the check run which will be created
-        path: '*.xml'                     # Path to test results (inside artifact .zip)
-        reporter: jest-junit              # Format of test results
+      - uses: dorny/test-reporter@v1
+        with:
+          artifact: test-results # artifact name
+          name: JEST Tests # Name of the check run which will be created
+          path: '*.xml' # Path to test results (inside artifact .zip)
+          reporter: jest-junit # Format of test results
 ```
 
 ## Usage
@@ -101,7 +106,6 @@ jobs:
 ```yaml
 - uses: dorny/test-reporter@v1
   with:
-
     # Name or regex of artifact containing test results
     # Regular expression must be enclosed in '/'.
     # Values from captured groups will replace occurrences of $N in report name.
@@ -153,9 +157,6 @@ jobs:
     # Must be less or equal to 50.
     max-annotations: '10'
 
-    # When true, the report will be published as a job summary.
-    report-job-summary: 'true'
-
     # When true, the report will be published as a comment in your pull request.
     report-comment: 'false'
 
@@ -171,8 +172,9 @@ jobs:
 ```
 
 ## Output parameters
+
 | Name       | Description              |
-| :--        | :--                      |
+| :--------- | :----------------------- |
 | conclusion | `success` or `failure`   |
 | passed     | Count of passed tests    |
 | failed     | Count of failed tests    |
@@ -197,6 +199,7 @@ Or with CLI arguments:
 [`dart test --file-reporter="json:test-results.json"`](https://pub.dev/packages/test)
 
 For more information see:
+
 - [test package](https://pub.dev/packages/test)
 - [test configuration](https://github.com/dart-lang/test/blob/master/pkgs/test/doc/configuration.md)
 </details>
@@ -204,12 +207,13 @@ For more information see:
 <details>
   <summary>dotnet-trx</summary>
 
-Test execution must be configured to produce *Visual Studio Test Results* files (TRX).
+Test execution must be configured to produce _Visual Studio Test Results_ files (TRX).
 To get test results in TRX format you can execute your tests with CLI arguments:
 
 `dotnet test --logger "trx;LogFileName=test-results.trx"`
 
 Or you can configure TRX test output in `*.csproj` or `Directory.Build.props`:
+
 ```xml
 <PropertyGroup>
   <VSTestLogger>trx%3bLogFileName=$(MSBuildProjectName).trx</VSTestLogger>
@@ -218,11 +222,13 @@ Or you can configure TRX test output in `*.csproj` or `Directory.Build.props`:
 ```
 
 Supported testing frameworks:
+
 - [xUnit](https://xunit.net/)
 - [NUnit](https://nunit.org/)
 - [MSTest](https://github.com/Microsoft/testfx-docs)
 
 For more information see [dotnet test](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-test#examples)
+
 </details>
 
 <details>
@@ -230,6 +236,7 @@ For more information see [dotnet test](https://docs.microsoft.com/en-us/dotnet/c
 
 Test run must be configured to use [JSON](https://github.com/dart-lang/test/blob/master/pkgs/test/doc/configuration.md#reporter) reporter.
 You can configure it in `dart_test.yaml`:
+
 ```yml
 file_reporters:
   json: reports/test-results.json
@@ -239,12 +246,12 @@ Or with (undocumented) CLI argument:
 
 `flutter test --machine > test-results.json`
 
-
 According to documentation `dart_test.yaml` should be at the root of the package, next to the package's pubspec.
 On current `stable` and `beta` channels it doesn't work, and you have to put `dart_test.yaml` inside your `test` folder.
 On `dev` channel, it's already fixed.
 
 For more information see:
+
 - [test package](https://pub.dev/packages/test)
 - [test configuration](https://github.com/dart-lang/test/blob/master/pkgs/test/doc/configuration.md)
 - [flutter-cli](https://flutter.dev/docs/reference/flutter-cli)
@@ -259,6 +266,7 @@ Support for [JUnit](https://Junit.org/) XML is experimental - should work but it
 To have code annotations working properly, it's required your directory structure matches the package name.
 This is due to the fact Java stack traces don't contain a full path to the source file.
 Some heuristic was necessary to figure out the mapping between the line in the stack trace and an actual source file.
+
 </details>
 
 <details>
@@ -267,6 +275,7 @@ Some heuristic was necessary to figure out the mapping between the line in the s
 [JEST](https://jestjs.io/) testing framework support requires the usage of [jest-Junit](https://github.com/jest-community/jest-Junit) reporter.
 It will create test results in Junit XML format which can be then processed by this action.
 You can use the following example configuration in `package.json`:
+
 ```json
 "scripts": {
   "test": "jest --ci --reporters=default --reporters=jest-Junit"
@@ -287,16 +296,19 @@ You can use the following example configuration in `package.json`:
 ```
 
 Configuration of `uniqueOutputName`, `suiteNameTemplate`, `classNameTemplate`, `titleTemplate` is important for proper visualization of test results.
+
 </details>
 
 <details>
   <summary>mocha-json</summary>
 
 [Mocha](https://mochajs.org/) testing framework support requires:
+
 - Mocha version [v7.2.0](https://github.com/mochajs/mocha/releases/tag/v7.2.0) or higher
 - Usage of [json](https://mochajs.org/#json) reporter.
 
 You can use the following example configuration in `package.json`:
+
 ```json
 "scripts": {
   "test": "mocha --reporter json > test-results.json"
@@ -306,6 +318,7 @@ You can use the following example configuration in `package.json`:
 Test processing might fail if any of your tests write anything on standard output.
 Mocha, unfortunately, doesn't have the option to store `json` output directly to the file, and we have to rely on redirecting its standard output.
 There is a work in progress to fix it: [mocha#4607](https://github.com/mochajs/mocha/pull/4607)
+
 </details>
 
 ## GitHub limitations
@@ -320,6 +333,7 @@ Unfortunately, there are some known issues and limitations caused by GitHub API:
   For more information, see [#67](https://github.com/dorny/test-reporter/issues/67).
 
 ## See also
+
 - [paths-filter](https://github.com/dorny/paths-filter) - Conditionally run actions based on files modified by PR, feature branch, or pushed commits
 
 ## License

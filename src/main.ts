@@ -46,7 +46,6 @@ class TestReporter {
   })
   readonly onlySummary = core.getInput('only-summary', {required: false}) === 'true'
   readonly token = core.getInput('token', {required: true})
-  readonly reportJobSummary = core.getInput('report-job-summary') === 'true'
   readonly reportComment = core.getInput('report-comment') === 'true'
   readonly octokit: InstanceType<typeof GitHub>
   readonly context = getCheckRunContext()
@@ -178,12 +177,13 @@ class TestReporter {
     core.info('Creating report summary')
     const {listSuites, listTests, onlySummary} = this
     const baseUrl = createResp.data.html_url as string
-    const summary = `<details><summary>Test results</summary>\n\n${getReport(results, {
+    const summary = getReport(results, {
       listSuites,
       listTests,
       baseUrl,
       onlySummary
-    })}</details>`
+    })
+
     core.info('Creating annotations')
     const annotations = getAnnotations(results, this.maxAnnotations)
 
@@ -223,11 +223,6 @@ class TestReporter {
           body: summary
         })
       }
-    }
-
-    if (this.reportJobSummary) {
-      core.info(`Publishing job summary with test results`)
-      await core.summary.addRaw(summary).write()
     }
 
     core.info(`Check run create response: ${resp.status}`)

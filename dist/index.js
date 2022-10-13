@@ -299,7 +299,6 @@ class TestReporter {
         });
         this.onlySummary = core.getInput('only-summary', { required: false }) === 'true';
         this.token = core.getInput('token', { required: true });
-        this.reportJobSummary = core.getInput('report-job-summary') === 'true';
         this.reportComment = core.getInput('report-comment') === 'true';
         this.context = (0, github_utils_1.getCheckRunContext)();
         this.octokit = github.getOctokit(this.token);
@@ -399,12 +398,12 @@ class TestReporter {
             core.info('Creating report summary');
             const { listSuites, listTests, onlySummary } = this;
             const baseUrl = createResp.data.html_url;
-            const summary = `<details><summary>Test results</summary>\n\n${(0, get_report_1.getReport)(results, {
+            const summary = (0, get_report_1.getReport)(results, {
                 listSuites,
                 listTests,
                 baseUrl,
                 onlySummary
-            })}</details>`;
+            });
             core.info('Creating annotations');
             const annotations = (0, get_annotations_1.getAnnotations)(results, this.maxAnnotations);
             const isFailed = results.some(tr => tr.result === 'failed');
@@ -433,10 +432,6 @@ class TestReporter {
                         body: summary
                     });
                 }
-            }
-            if (this.reportJobSummary) {
-                core.info(`Publishing job summary with test results`);
-                yield core.summary.addRaw(summary).write();
             }
             core.info(`Check run create response: ${resp.status}`);
             core.info(`Check run URL: ${resp.data.url}`);

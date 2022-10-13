@@ -20,7 +20,7 @@ inputs:
       The fast-glob library that is internally used interprets backslashes as escape characters.
       If enabled, all backslashes in provided path will be replaced by forward slashes and act as directory separators.
       It might be useful when path input variable is composed dynamically from existing directory paths on Windows.
-    default: "false"
+    default: 'false'
     required: false
   reporter:
     description: |
@@ -38,7 +38,7 @@ inputs:
         - all
         - only-failed
     required: true
-    default: "all"
+    default: 'all'
   list-tests:
     description: |
       Limits which test cases are listed. Supported options:
@@ -46,31 +46,26 @@ inputs:
         - only-failed
         - none
     required: true
-    default: "all"
+    default: 'all'
   max-annotations:
     description: |
       Limits number of created annotations with error message and stack trace captured during test execution.
       Must be less or equal to 50.
-    required: "true"
-    default: "10"
-  report-job-summary:
-    description: |
-      When true, the report will be published as a job summary.
-    required: false
-    default: "true"
+    required: true
+    default: '10'
   report-comment:
     description: |
       When true, the report will be published as a comment in your pull request.
     required: false
-    default: false
+    default: 'false'
   fail-on-error:
     description: Set this action as failed if test report contain any failed test
     required: true
-    default: "true"
+    default: 'true'
   fail-on-no-results:
     description: Set this action as failed if no test report files were found
     required: true
-    default: "false"
+    default: 'false'
   working-directory:
     description: Relative path under $GITHUB_WORKSPACE where the repository was checked out
     required: false
@@ -79,7 +74,7 @@ inputs:
       Allows you to generate only the summary.
       If enabled, the report will contain a table listing each test results file and the number of passed, failed, and skipped tests.
       Detailed listing of test suites and test cases will be skipped.
-    default: "false"
+    default: 'false'
     required: false
   token:
     description: GitHub Access Token
@@ -102,8 +97,8 @@ outputs:
   url:
     description: Check run url
 runs:
-  using: "node12"
-  main: "dist/index.js"
+  using: 'node12'
+  main: 'dist/index.js'
 branding:
   color: blue
   icon: file-text
