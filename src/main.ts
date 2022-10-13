@@ -247,7 +247,7 @@ class TestReporter {
       const pr = prs[0];
 
       // test
-      const allcomments = this.octokit.rest.pulls.listComments({
+      const allcomments = this.octokit.rest.issues.listComments({
         owner: github.context.repo.owner,
         repo: github.context.repo.repo,
         issue_number: pr.number,
