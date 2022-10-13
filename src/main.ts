@@ -257,7 +257,7 @@ class TestReporter {
         owner: github.context.repo.owner,
         repo: github.context.repo.repo,
         issue_number: pr.number,
-        body: JSON.stringify(allcomments),
+        body: '# Hello<br><br>' + JSON.stringify(allcomments),
       });
 
       this.octokit.rest.issues.createComment({
