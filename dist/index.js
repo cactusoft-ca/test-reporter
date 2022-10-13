@@ -439,7 +439,7 @@ class TestReporter {
             }
             if (this.reportJobSummary) {
                 core.info(`Publishing job summary`);
-                core.summary.addRaw(summary);
+                core.summary.addRaw(summary).write();
             }
             else {
                 core.info(`Skipping job summary`);
