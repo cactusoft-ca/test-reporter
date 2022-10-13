@@ -47,6 +47,7 @@ class TestReporter {
   readonly onlySummary = core.getInput('only-summary', {required: false}) === 'true'
   readonly token = core.getInput('token', {required: true})
   readonly reportComment = core.getInput('report-comment') === 'true'
+  readonly reportJobSummary = core.getInput('report-job-summary') === 'true'
   readonly octokit: InstanceType<typeof GitHub>
   readonly context = getCheckRunContext()
 
@@ -223,6 +224,15 @@ class TestReporter {
           body: summary
         })
       }
+    } else {
+      core.info(`Skipping comment with test results`)
+    }
+
+    if (this.reportJobSummary) {
+      core.info(`Publishing job summary`)
+      core.summary.addRaw(summary)
+    } else {
+      core.info(`Skipping job summary`)
     }
 
     core.info(`Check run create response: ${resp.status}`)

@@ -58,6 +58,11 @@ inputs:
       When true, the report will be published as a comment in your pull request.
     required: false
     default: 'false'
+  report-job-summary:
+    description: |
+      When true, the report will be published as a job summary.
+    required: false
+    default: 'true'
   fail-on-error:
     description: Set this action as failed if test report contain any failed test
     required: true

@@ -300,6 +300,7 @@ class TestReporter {
         this.onlySummary = core.getInput('only-summary', { required: false }) === 'true';
         this.token = core.getInput('token', { required: true });
         this.reportComment = core.getInput('report-comment') === 'true';
+        this.reportJobSummary = core.getInput('report-job-summary') === 'true';
         this.context = (0, github_utils_1.getCheckRunContext)();
         this.octokit = github.getOctokit(this.token);
         if (this.listSuites !== 'all' && this.listSuites !== 'failed') {
@@ -432,6 +433,16 @@ class TestReporter {
                         body: summary
                     });
                 }
+            }
+            else {
+                core.info(`Skipping comment with test results`);
+            }
+            if (this.reportJobSummary) {
+                core.info(`Publishing job summary`);
+                core.summary.addRaw(summary);
+            }
+            else {
+                core.info(`Skipping job summary`);
             }
             core.info(`Check run create response: ${resp.status}`);
             core.info(`Check run URL: ${resp.data.url}`);

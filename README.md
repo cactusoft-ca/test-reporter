@@ -160,6 +160,9 @@ jobs:
     # When true, the report will be published as a comment in your pull request.
     report-comment: 'false'
 
+    # When true, the report will be published as a job summary.
+    report-job-summary: 'true'
+
     # Set action as failed if test report contains any failed test
     fail-on-error: 'true'
 
