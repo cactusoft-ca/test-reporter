@@ -265,9 +265,9 @@ const dotnet_trx_parser_1 = __nccwpck_require__(2664);
 const java_junit_parser_1 = __nccwpck_require__(676);
 const jest_junit_parser_1 = __nccwpck_require__(1113);
 const mocha_json_parser_1 = __nccwpck_require__(6043);
-const path_utils_1 = __nccwpck_require__(4070);
 const github_utils_1 = __nccwpck_require__(3522);
 const markdown_utils_1 = __nccwpck_require__(6482);
+const path_utils_1 = __nccwpck_require__(4070);
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -294,9 +294,13 @@ class TestReporter {
         this.maxAnnotations = parseInt(core.getInput('max-annotations', { required: true }));
         this.failOnError = core.getInput('fail-on-error', { required: true }) === 'true';
         this.failOnNoResults = core.getInput('fail-on-no-results', { required: true }) === 'true';
-        this.workDirInput = core.getInput('working-directory', { required: false });
+        this.workDirInput = core.getInput('working-directory', {
+            required: false
+        });
         this.onlySummary = core.getInput('only-summary', { required: false }) === 'true';
         this.token = core.getInput('token', { required: true });
+        this.reportJobSummary = core.getInput('report-job-summary') === 'true';
+        this.reportComment = core.getInput('report-comment') === 'true';
         this.context = (0, github_utils_1.getCheckRunContext)();
         this.octokit = github.getOctokit(this.token);
         if (this.listSuites !== 'all' && this.listSuites !== 'failed') {
@@ -412,21 +416,27 @@ class TestReporter {
                     summary,
                     annotations
                 } }, github.context.repo));
-            core.info(`Updating pull request comment with test results`);
-            const result = yield this.octokit.rest.repos.listPullRequestsAssociatedWithCommit({
-                owner: github.context.repo.owner,
-                repo: github.context.repo.repo,
-                commit_sha: this.context.sha
-            });
-            const prs = result.data.filter(el => el.state === 'open');
-            if (prs.length > 0) {
-                const pr = prs[0];
-                this.octokit.rest.issues.createComment({
+            if (this.reportComment) {
+                core.info(`Updating pull request comment with test results`);
+                const result = yield this.octokit.rest.repos.listPullRequestsAssociatedWithCommit({
                     owner: github.context.repo.owner,
                     repo: github.context.repo.repo,
-                    issue_number: pr.number,
-                    body: summary
+                    commit_sha: this.context.sha
                 });
+                const prs = result.data.filter(el => el.state === 'open');
+                if (prs.length > 0) {
+                    const pr = prs[0];
+                    this.octokit.rest.issues.createComment({
+                        owner: github.context.repo.owner,
+                        repo: github.context.repo.repo,
+                        issue_number: pr.number,
+                        body: summary
+                    });
+                }
+            }
+            if (this.reportJobSummary) {
+                core.info(`Publishing job summary with test results`);
+                yield core.summary.addRaw(summary).write();
             }
             core.info(`Check run create response: ${resp.status}`);
             core.info(`Check run URL: ${resp.data.url}`);
