@@ -153,6 +153,12 @@ jobs:
     # Must be less or equal to 50.
     max-annotations: '10'
 
+    # When true, the report will be published as a job summary.
+    report-job-summary: 'true'
+
+    # When true, the report will be published as a comment in your pull request.
+    report-comment: 'false'
+
     # Set action as failed if test report contains any failed test
     fail-on-error: 'true'
 
