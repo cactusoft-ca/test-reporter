@@ -3,12 +3,12 @@ import * as github from '@actions/github'
 import {GitHub} from '@actions/github/lib/utils'
 
 import {ArtifactProvider} from './input-providers/artifact-provider'
-import {LocalFileProvider} from './input-providers/local-file-provider'
 import {FileContent} from './input-providers/input-provider'
-import {ParseOptions, TestParser} from './test-parser'
-import {TestRunResult} from './test-results'
+import {LocalFileProvider} from './input-providers/local-file-provider'
 import {getAnnotations} from './report/get-annotations'
 import {getReport} from './report/get-report'
+import {ParseOptions, TestParser} from './test-parser'
+import {TestRunResult} from './test-results'
 
 import {DartJsonParser} from './parsers/dart-json/dart-json-parser'
 import {DotnetTrxParser} from './parsers/dotnet-trx/dotnet-trx-parser'
@@ -16,9 +16,9 @@ import {JavaJunitParser} from './parsers/java-junit/java-junit-parser'
 import {JestJunitParser} from './parsers/jest-junit/jest-junit-parser'
 import {MochaJsonParser} from './parsers/mocha-json/mocha-json-parser'
 
-import {normalizeDirPath, normalizeFilePath} from './utils/path-utils'
 import {getCheckRunContext} from './utils/github-utils'
 import {Icon} from './utils/markdown-utils'
+import {normalizeDirPath, normalizeFilePath} from './utils/path-utils'
 
 async function main(): Promise<void> {
   try {
@@ -41,9 +41,13 @@ class TestReporter {
   readonly maxAnnotations = parseInt(core.getInput('max-annotations', {required: true}))
   readonly failOnError = core.getInput('fail-on-error', {required: true}) === 'true'
   readonly failOnNoResults = core.getInput('fail-on-no-results', {required: true}) === 'true'
-  readonly workDirInput = core.getInput('working-directory', {required: false})
+  readonly workDirInput = core.getInput('working-directory', {
+    required: false
+  })
   readonly onlySummary = core.getInput('only-summary', {required: false}) === 'true'
   readonly token = core.getInput('token', {required: true})
+  readonly reportComment = core.getInput('report-comment') === 'true'
+  readonly reportJobSummary = core.getInput('report-job-summary') === 'true'
   readonly octokit: InstanceType<typeof GitHub>
   readonly context = getCheckRunContext()
 
@@ -174,12 +178,13 @@ class TestReporter {
     core.info('Creating report summary')
     const {listSuites, listTests, onlySummary} = this
     const baseUrl = createResp.data.html_url as string
-    const summary = `<details><summary>Test results</summary>\n\n${getReport(results, {
+    const summary = getReport(results, {
       listSuites,
       listTests,
       baseUrl,
       onlySummary
-    })}</details>`
+    })
+
     core.info('Creating annotations')
     const annotations = getAnnotations(results, this.maxAnnotations)
 
@@ -200,23 +205,34 @@ class TestReporter {
       ...github.context.repo
     })
 
-    core.info(`Updating pull request comment with test results`)
-    const result = await this.octokit.rest.repos.listPullRequestsAssociatedWithCommit({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      commit_sha: this.context.sha
-    })
-
-    const prs = result.data.filter(el => el.state === 'open')
-    if (prs.length > 0) {
-      const pr = prs[0]
-
-      this.octokit.rest.issues.createComment({
+    if (this.reportComment) {
+      core.info(`Updating pull request comment with test results`)
+      const result = await this.octokit.rest.repos.listPullRequestsAssociatedWithCommit({
         owner: github.context.repo.owner,
         repo: github.context.repo.repo,
-        issue_number: pr.number,
-        body: summary
+        commit_sha: this.context.sha
       })
+
+      const prs = result.data.filter(el => el.state === 'open')
+      if (prs.length > 0) {
+        const pr = prs[0]
+
+        this.octokit.rest.issues.createComment({
+          owner: github.context.repo.owner,
+          repo: github.context.repo.repo,
+          issue_number: pr.number,
+          body: summary
+        })
+      }
+    } else {
+      core.info(`Skipping comment with test results`)
+    }
+
+    if (this.reportJobSummary) {
+      core.info(`Publishing job summary`)
+      core.summary.addRaw(summary).write()
+    } else {
+      core.info(`Skipping job summary`)
     }
 
     core.info(`Check run create response: ${resp.status}`)
