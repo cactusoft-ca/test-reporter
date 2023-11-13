@@ -53,6 +53,19 @@ inputs:
       Must be less or equal to 50.
     required: true
     default: '10'
+  run-id:
+    description: |
+      Workflow run id when reporting to the workflow job directly.
+    required: false
+  run-job-name:
+    description: |
+      Workflow run job name used to identify the correct job within the workflow.
+    required: false
+  report-check:
+    description: |
+      When true, the report will be published on a seperate check.
+    required: false
+    default: 'true'
   report-comment:
     description: |
       When true, the report will be published as a comment in your pull request.

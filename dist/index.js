@@ -299,6 +299,9 @@ class TestReporter {
         });
         this.onlySummary = core.getInput('only-summary', { required: false }) === 'true';
         this.token = core.getInput('token', { required: true });
+        this.runId = parseInt(core.getInput('run-id'), 10);
+        this.runJobName = core.getInput('run-job-name');
+        this.reportCheck = core.getInput('report-check') === 'true';
         this.reportComment = core.getInput('report-comment') === 'true';
         this.reportJobSummary = core.getInput('report-job-summary') === 'true';
         this.context = (0, github_utils_1.getCheckRunContext)();
@@ -380,6 +383,7 @@ class TestReporter {
         });
     }
     createReport(parser, name, files) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             if (files.length === 0) {
                 core.warning(`No file matches path ${this.path}`);
@@ -391,18 +395,42 @@ class TestReporter {
                 const tr = yield parser.parse(file, content);
                 results.push(tr);
             }
-            core.info(`Creating check run ${name}`);
-            const createResp = yield this.octokit.rest.checks.create(Object.assign({ head_sha: this.context.sha, name, status: 'in_progress', output: {
-                    title: name,
-                    summary: ''
-                } }, github.context.repo));
+            let newCheck = false;
+            let checkId;
+            let baseUrl;
+            if (this.reportCheck) {
+                // Create check run
+                core.info(`Creating check run ${name}`);
+                const createResp = yield this.octokit.rest.checks.create(Object.assign({ head_sha: this.context.sha, name, status: 'in_progress', output: {
+                        title: name,
+                        summary: ''
+                    } }, github.context.repo));
+                newCheck = true;
+                checkId = createResp.data.id;
+                baseUrl = createResp.data.html_url;
+            }
+            else if (this.runId) {
+                // Get existing check run based on context
+                core.info(`Getting current workflow job for run ${this.runId}`);
+                const jobs = yield this.octokit.rest.actions.listJobsForWorkflowRun(Object.assign({ run_id: this.runId, per_page: 100 }, github.context.repo));
+                const job = jobs.data.jobs.find(job => { var _a, _b; return ((_a = job.name) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === ((_b = this.runJobName) === null || _b === void 0 ? void 0 : _b.toLowerCase()); });
+                checkId = (job === null || job === void 0 ? void 0 : job.check_run_url)
+                    ? parseInt(job === null || job === void 0 ? void 0 : job.check_run_url.substring((job === null || job === void 0 ? void 0 : job.check_run_url.lastIndexOf('/')) + 1), 10)
+                    : undefined;
+                baseUrl = (_a = job === null || job === void 0 ? void 0 : job.html_url) !== null && _a !== void 0 ? _a : undefined;
+            }
+            else {
+                // Couldn't get check run
+                checkId = undefined;
+                baseUrl = undefined;
+                core.warning(`Not reporting check, but workflow run-id was not provided. Most reporting will be skipped entirely.`);
+            }
             core.info('Creating report summary');
             const { listSuites, listTests, onlySummary } = this;
-            const baseUrl = createResp.data.html_url;
             const summary = (0, get_report_1.getReport)(results, {
                 listSuites,
                 listTests,
-                baseUrl,
+                baseUrl: baseUrl || '',
                 onlySummary
             });
             core.info('Creating annotations');
@@ -410,12 +438,25 @@ class TestReporter {
             const isFailed = results.some(tr => tr.result === 'failed');
             const conclusion = isFailed ? 'failure' : 'success';
             const icon = isFailed ? markdown_utils_1.Icon.fail : markdown_utils_1.Icon.success;
-            core.info(`Updating check run conclusion (${conclusion}) and output`);
-            const resp = yield this.octokit.rest.checks.update(Object.assign({ check_run_id: createResp.data.id, conclusion, status: 'completed', output: {
-                    title: `${name} ${icon}`,
-                    summary,
-                    annotations
-                } }, github.context.repo));
+            if (newCheck && checkId) {
+                core.info(`Updating check run conclusion (${conclusion}) and output`);
+                const resp = yield this.octokit.rest.checks.update(Object.assign({ check_run_id: checkId, conclusion, status: 'completed', output: {
+                        title: `${name} ${icon}`,
+                        summary,
+                        annotations
+                    } }, github.context.repo));
+                core.info(`Check run create response: ${resp.status}`);
+                core.info(`Check run URL: ${resp.data.url}`);
+                core.info(`Check run HTML: ${resp.data.html_url}`);
+                core.setOutput('url', resp.data.html_url);
+            }
+            else if (checkId) {
+                core.info(`Updating check run conclusion (${conclusion}) and output`);
+                const resp = yield this.octokit.rest.checks.update(Object.assign({ check_run_id: checkId, output: {
+                        annotations
+                    } }, github.context.repo));
+                core.setOutput('url', resp.data.html_url);
+            }
             if (this.reportComment) {
                 core.info(`Updating pull request comment with test results`);
                 const result = yield this.octokit.rest.repos.listPullRequestsAssociatedWithCommit({
@@ -444,10 +485,6 @@ class TestReporter {
             else {
                 core.info(`Skipping job summary`);
             }
-            core.info(`Check run create response: ${resp.status}`);
-            core.info(`Check run URL: ${resp.data.url}`);
-            core.info(`Check run HTML: ${resp.data.html_url}`);
-            core.setOutput('url', resp.data.html_url);
             return results;
         });
     }

@@ -157,6 +157,15 @@ jobs:
     # Must be less or equal to 50.
     max-annotations: '10'
 
+    # Workflow run id when reporting to the workflow job directly.
+    run-id: ''
+
+    # Workflow run job name used to identify the correct job within the workflow.
+    run-job-name: ''
+
+    # When true, the report will be published on a seperate check.
+    report-check: 'false'
+
     # When true, the report will be published as a comment in your pull request.
     report-comment: 'false'
 

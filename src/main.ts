@@ -46,6 +46,9 @@ class TestReporter {
   })
   readonly onlySummary = core.getInput('only-summary', {required: false}) === 'true'
   readonly token = core.getInput('token', {required: true})
+  readonly runId = parseInt(core.getInput('run-id'), 10)
+  readonly runJobName = core.getInput('run-job-name')
+  readonly reportCheck = core.getInput('report-check') === 'true'
   readonly reportComment = core.getInput('report-comment') === 'true'
   readonly reportJobSummary = core.getInput('report-job-summary') === 'true'
   readonly octokit: InstanceType<typeof GitHub>
@@ -163,25 +166,59 @@ class TestReporter {
       results.push(tr)
     }
 
-    core.info(`Creating check run ${name}`)
-    const createResp = await this.octokit.rest.checks.create({
-      head_sha: this.context.sha,
-      name,
-      status: 'in_progress',
-      output: {
-        title: name,
-        summary: ''
-      },
-      ...github.context.repo
-    })
+    let newCheck = false
+    let checkId: number | undefined
+    let baseUrl: string | undefined
+
+    if (this.reportCheck) {
+      // Create check run
+      core.info(`Creating check run ${name}`)
+      const createResp = await this.octokit.rest.checks.create({
+        head_sha: this.context.sha,
+        name,
+        status: 'in_progress',
+        output: {
+          title: name,
+          summary: ''
+        },
+        ...github.context.repo
+      })
+
+      newCheck = true
+      checkId = createResp.data.id
+      baseUrl = createResp.data.html_url as string
+    } else if (this.runId) {
+      // Get existing check run based on context
+      core.info(`Getting current workflow job for run ${this.runId}`)
+
+      const jobs = await this.octokit.rest.actions.listJobsForWorkflowRun({
+        run_id: this.runId,
+        per_page: 100,
+        ...github.context.repo
+      })
+
+      const job = jobs.data.jobs.find(job => job.name?.toLowerCase() === this.runJobName?.toLowerCase())
+      checkId = job?.check_run_url
+        ? parseInt(job?.check_run_url.substring(job?.check_run_url.lastIndexOf('/') + 1), 10)
+        : undefined
+
+      baseUrl = job?.html_url ?? undefined
+    } else {
+      // Couldn't get check run
+      checkId = undefined
+      baseUrl = undefined
+
+      core.warning(
+        `Not reporting check, but workflow run-id was not provided. Most reporting will be skipped entirely.`
+      )
+    }
 
     core.info('Creating report summary')
     const {listSuites, listTests, onlySummary} = this
-    const baseUrl = createResp.data.html_url as string
     const summary = getReport(results, {
       listSuites,
       listTests,
-      baseUrl,
+      baseUrl: baseUrl || '',
       onlySummary
     })
 
@@ -192,18 +229,36 @@ class TestReporter {
     const conclusion = isFailed ? 'failure' : 'success'
     const icon = isFailed ? Icon.fail : Icon.success
 
-    core.info(`Updating check run conclusion (${conclusion}) and output`)
-    const resp = await this.octokit.rest.checks.update({
-      check_run_id: createResp.data.id,
-      conclusion,
-      status: 'completed',
-      output: {
-        title: `${name} ${icon}`,
-        summary,
-        annotations
-      },
-      ...github.context.repo
-    })
+    if (newCheck && checkId) {
+      core.info(`Updating check run conclusion (${conclusion}) and output`)
+      const resp = await this.octokit.rest.checks.update({
+        check_run_id: checkId,
+        conclusion,
+        status: 'completed',
+        output: {
+          title: `${name} ${icon}`,
+          summary,
+          annotations
+        },
+        ...github.context.repo
+      })
+
+      core.info(`Check run create response: ${resp.status}`)
+      core.info(`Check run URL: ${resp.data.url}`)
+      core.info(`Check run HTML: ${resp.data.html_url}`)
+      core.setOutput('url', resp.data.html_url)
+    } else if (checkId) {
+      core.info(`Updating check run conclusion (${conclusion}) and output`)
+      const resp = await this.octokit.rest.checks.update({
+        check_run_id: checkId,
+        output: {
+          annotations
+        },
+        ...github.context.repo
+      })
+
+      core.setOutput('url', resp.data.html_url)
+    }
 
     if (this.reportComment) {
       core.info(`Updating pull request comment with test results`)
@@ -234,11 +289,6 @@ class TestReporter {
     } else {
       core.info(`Skipping job summary`)
     }
-
-    core.info(`Check run create response: ${resp.status}`)
-    core.info(`Check run URL: ${resp.data.url}`)
-    core.info(`Check run HTML: ${resp.data.html_url}`)
-    core.setOutput('url', resp.data.html_url)
 
     return results
   }
