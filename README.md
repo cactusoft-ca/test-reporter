@@ -164,7 +164,7 @@ jobs:
     run-job-name: ''
 
     # When true, the report will be published on a seperate check.
-    report-check: 'false'
+    report-check: 'true'
 
     # When true, the report will be published as a comment in your pull request.
     report-comment: 'false'

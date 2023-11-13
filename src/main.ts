@@ -197,6 +197,9 @@ class TestReporter {
         ...github.context.repo
       })
 
+      core.info(`Found run jobs: ${jobs.data.jobs.map(job => job.name).join(', ')}`)
+      core.info(`Found jobs URLs: ${jobs.data.jobs.map(job => job.check_run_url).join(', ')}`)
+
       const job = jobs.data.jobs.find(job => job.name?.toLowerCase() === this.runJobName?.toLowerCase())
       checkId = job?.check_run_url
         ? parseInt(job?.check_run_url.substring(job?.check_run_url.lastIndexOf('/') + 1), 10)
@@ -212,6 +215,10 @@ class TestReporter {
         `Not reporting check, but workflow run-id was not provided. Most reporting will be skipped entirely.`
       )
     }
+
+    core.info(`New check? ${newCheck}`)
+    core.info(`Check ID:  ${checkId}`)
+    core.info(`Base URL:  ${checkId}`)
 
     core.info('Creating report summary')
     const {listSuites, listTests, onlySummary} = this
@@ -248,7 +255,7 @@ class TestReporter {
       core.info(`Check run HTML: ${resp.data.html_url}`)
       core.setOutput('url', resp.data.html_url)
     } else if (checkId) {
-      core.info(`Updating check run conclusion (${conclusion}) and output`)
+      core.info(`Updating check run output`)
       const resp = await this.octokit.rest.checks.update({
         check_run_id: checkId,
         output: {

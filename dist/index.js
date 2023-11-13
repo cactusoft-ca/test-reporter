@@ -413,6 +413,8 @@ class TestReporter {
                 // Get existing check run based on context
                 core.info(`Getting current workflow job for run ${this.runId}`);
                 const jobs = yield this.octokit.rest.actions.listJobsForWorkflowRun(Object.assign({ run_id: this.runId, per_page: 100 }, github.context.repo));
+                core.info(`Found run jobs: ${jobs.data.jobs.map(job => job.name).join(', ')}`);
+                core.info(`Found jobs URLs: ${jobs.data.jobs.map(job => job.check_run_url).join(', ')}`);
                 const job = jobs.data.jobs.find(job => { var _a, _b; return ((_a = job.name) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === ((_b = this.runJobName) === null || _b === void 0 ? void 0 : _b.toLowerCase()); });
                 checkId = (job === null || job === void 0 ? void 0 : job.check_run_url)
                     ? parseInt(job === null || job === void 0 ? void 0 : job.check_run_url.substring((job === null || job === void 0 ? void 0 : job.check_run_url.lastIndexOf('/')) + 1), 10)
@@ -425,6 +427,9 @@ class TestReporter {
                 baseUrl = undefined;
                 core.warning(`Not reporting check, but workflow run-id was not provided. Most reporting will be skipped entirely.`);
             }
+            core.info(`New check? ${newCheck}`);
+            core.info(`Check ID:  ${checkId}`);
+            core.info(`Base URL:  ${checkId}`);
             core.info('Creating report summary');
             const { listSuites, listTests, onlySummary } = this;
             const summary = (0, get_report_1.getReport)(results, {
@@ -451,7 +456,7 @@ class TestReporter {
                 core.setOutput('url', resp.data.html_url);
             }
             else if (checkId) {
-                core.info(`Updating check run conclusion (${conclusion}) and output`);
+                core.info(`Updating check run output`);
                 const resp = yield this.octokit.rest.checks.update(Object.assign({ check_run_id: checkId, output: {
                         annotations
                     } }, github.context.repo));

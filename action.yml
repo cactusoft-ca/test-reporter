@@ -8,7 +8,7 @@ inputs:
     required: false
   name:
     description: Name of the check run
-    required: true
+    required: false
   path:
     description: |
       Coma separated list of paths to test results
@@ -115,7 +115,7 @@ outputs:
   url:
     description: Check run url
 runs:
-  using: 'node12'
+  using: 'node16'
   main: 'dist/index.js'
 branding:
   color: blue
