@@ -458,6 +458,8 @@ class TestReporter {
             else if (checkId) {
                 core.info(`Updating check run output`);
                 const resp = yield this.octokit.rest.checks.update(Object.assign({ check_run_id: checkId, output: {
+                        title: `${name} ${icon}`,
+                        summary,
                         annotations
                     } }, github.context.repo));
                 core.setOutput('url', resp.data.html_url);
