@@ -259,6 +259,8 @@ class TestReporter {
       const resp = await this.octokit.rest.checks.update({
         check_run_id: checkId,
         output: {
+          title: `${name} ${icon}`,
+          summary,
           annotations
         },
         ...github.context.repo
