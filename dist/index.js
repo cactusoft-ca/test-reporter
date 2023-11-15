@@ -1741,11 +1741,17 @@ function getTestsReport(ts, runIndex, suiteIndex, options) {
     sections.push(`### ${icon}\xa0${tsNameLink}`);
     sections.push('```');
     for (const grp of groups) {
+        if (grp.failed === 0 && options.listTests === 'failed') {
+            continue;
+        }
         if (grp.name) {
             sections.push(grp.name);
         }
         const space = grp.name ? '  ' : '';
         for (const tc of grp.tests) {
+            if (tc.result !== 'failed' && options.listTests === 'failed') {
+                continue;
+            }
             const result = getResultIcon(tc.result);
             sections.push(`${space}${result} ${tc.name}`);
             if (tc.error) {
