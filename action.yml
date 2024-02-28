@@ -115,7 +115,7 @@ outputs:
   url:
     description: Check run url
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'dist/index.js'
 branding:
   color: blue
